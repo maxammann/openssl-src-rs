@@ -154,6 +154,8 @@ impl Build {
         let build_dir = out_dir.join("build");
         let install_dir = out_dir.join("install");
         let additional_headers = out_dir.join("additional_headers");
+        fs::create_dir_all(&additional_headers).unwrap();
+        Self::insert_claim_interface(&additional_headers).unwrap();
 
         if build_dir.exists() {
             fs::remove_dir_all(&build_dir).unwrap();
@@ -519,8 +521,11 @@ impl Build {
             self.run_command(depend, "building OpenSSL dependencies");
 
             let mut build = self.cmd_make();
-            //build.arg("build_libs").current_dir(&inner_dir);
+            #[cfg(any(feature = "openssl101f", feature = "openssl102u"))]
             build.current_dir(&inner_dir);
+            #[cfg(not(any(feature = "openssl101f", feature = "openssl102u")))]
+            build.arg("build_libs").current_dir(&inner_dir);
+
             if !cfg!(windows) {
                 if let Some(s) = env::var_os("CARGO_MAKEFLAGS") {
                     build.env("MAKEFLAGS", s);
