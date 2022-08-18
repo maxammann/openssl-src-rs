@@ -155,29 +155,16 @@ impl Build {
         let install_dir = out_dir.join("install");
         let additional_headers = out_dir.join("additional_headers");
 
-        fs::create_dir_all(&additional_headers).unwrap();
-        Self::insert_claim_interface(&additional_headers).unwrap();
-
+        if build_dir.exists() {
+            fs::remove_dir_all(&build_dir).unwrap();
+        }
         if install_dir.exists() {
             fs::remove_dir_all(&install_dir).unwrap();
         }
 
-        let clean_build = !build_dir.exists();
-
         let inner_dir = build_dir.join("src");
         fs::create_dir_all(&inner_dir).unwrap();
-        // Copy again if any file changed
-        println!(
-            "cargo:rerun-if-changed={}",
-            source_dir().into_os_string().into_string().unwrap()
-        );
-        //cp_r(&source_dir(), &inner_dir);
-        let mut cp = Command::new("cp");
-        cp.arg("-r");
-        cp.arg("-u"); // only update files if out of date
-        cp.arg(source_dir().into_os_string().into_string().unwrap() + "/.");
-        cp.arg(inner_dir.clone().into_os_string().into_string().unwrap());
-        self.run_command(cp, "dsf");
+        cp_r(&source_dir(), &inner_dir);
         apply_patches(target, &inner_dir);
 
         let perl_program =
@@ -195,6 +182,7 @@ impl Build {
         // Specify that openssl directory where things are loaded at runtime is
         // not inside our build directory. Instead this should be located in the
         // default locations of the OpenSSL build scripts.
+        #[cfg(not(any(feature = "openssl101f", feature = "openssl102u")))]
         if target.contains("windows") {
             configure.arg("--openssldir=SYS$MANAGER:[OPENSSL]");
         } else {
@@ -207,7 +195,10 @@ impl Build {
             .arg("no-shared")
             // No need to build tests, we won't run them anyway
             .arg("no-unit-test")
-            .arg("no-tests"); // speed up compilation
+            // Nothing related to zlib please
+            .arg("no-comp")
+            .arg("no-zlib")
+            .arg("no-zlib-dynamic");
 
         if cfg!(feature = "weak-crypto") {
             configure
@@ -219,10 +210,6 @@ impl Build {
                 .arg("no-md2")
                 .arg("no-rc5")
                 .arg("no-weak-ssl-ciphers");
-        }
-
-        if cfg!(feature = "weak-crypto") {
-            configure.arg("enable-weak-ssl-ciphers");
         }
 
         if cfg!(not(feature = "camellia")) {
@@ -512,10 +499,7 @@ impl Build {
 
         // And finally, run the perl configure script!
         configure.current_dir(&inner_dir);
-
-        if clean_build {
-            self.run_command(configure, "configuring OpenSSL build");
-        }
+        self.run_command(configure, "configuring OpenSSL build");
 
         // On MSVC we use `nmake.exe` with a slightly different invocation, so
         // have that take a different path than the standard `make` below.
@@ -534,16 +518,14 @@ impl Build {
             depend.arg("depend").current_dir(&inner_dir);
             self.run_command(depend, "building OpenSSL dependencies");
 
-            println!("make directory {:?}", inner_dir);
             let mut build = self.cmd_make();
+            //build.arg("build_libs").current_dir(&inner_dir);
             build.current_dir(&inner_dir);
-
-            // This breaks compilation of OpenSSL 1.0.1
-            /*if !cfg!(windows) {
+            if !cfg!(windows) {
                 if let Some(s) = env::var_os("CARGO_MAKEFLAGS") {
                     build.env("MAKEFLAGS", s);
                 }
-            }*/
+            }
 
             if let Some(ref isysr) = ios_isysroot {
                 let components: Vec<&str> = isysr.split("/SDKs/").collect();
@@ -554,7 +536,11 @@ impl Build {
             self.run_command(build, "building OpenSSL");
 
             let mut install = self.cmd_make();
+            #[cfg(any(feature = "openssl101f", feature = "openssl102u"))]
             install.arg("install_sw").current_dir(&inner_dir);
+            #[cfg(not(any(feature = "openssl101f", feature = "openssl102u")))]
+            install.arg("install_dev").current_dir(&inner_dir);
+
             self.run_command(install, "installing OpenSSL");
         }
 
@@ -568,7 +554,7 @@ impl Build {
             Self::build_deterministic_rand(&install_dir);
         }
 
-        //fs::remove_dir_all(&inner_dir).unwrap();
+        fs::remove_dir_all(&inner_dir).unwrap();
 
         Artifacts {
             lib_dir: install_dir.join("lib"),
