@@ -1,13 +1,13 @@
-extern crate cc;
 extern crate bindgen;
+extern crate cc;
 
-use fs::canonicalize;
-use std::env;
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::fs::File;
-use std::io::Write;
+use std::{
+    env, fs,
+    fs::{canonicalize, File},
+    io::Write,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 pub fn source_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join(if cfg!(feature = "openssl101f") {
@@ -180,7 +180,6 @@ impl Build {
         self.run_command(cp, "dsf");
         apply_patches(target, &inner_dir);
 
-
         let perl_program =
             env::var("OPENSSL_SRC_PERL").unwrap_or(env::var("PERL").unwrap_or("perl".to_string()));
         let mut configure = Command::new(perl_program);
@@ -223,8 +222,7 @@ impl Build {
         }
 
         if cfg!(feature = "weak-crypto") {
-            configure
-                .arg("enable-weak-ssl-ciphers");
+            configure.arg("enable-weak-ssl-ciphers");
         }
 
         if cfg!(not(feature = "camellia")) {
@@ -493,7 +491,13 @@ impl Build {
         }
 
         // Make additional headers available
-        cc.push_str(format!(" -I{}", canonicalize(&additional_headers).unwrap().to_str().unwrap()).as_str());
+        cc.push_str(
+            format!(
+                " -I{}",
+                canonicalize(&additional_headers).unwrap().to_str().unwrap()
+            )
+            .as_str(),
+        );
 
         if cfg!(feature = "asan") {
             // Disable freelists as they may interfere with malloc
