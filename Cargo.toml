@@ -16,6 +16,8 @@ exclude = [
   'openssl/test/*',
 ]
 
+path = "src/combined.rs"
+
 [features]
 # Enables features which are neccassary to make openssl ready for fuzzing, somehow I'm ont able to patch these in,
 # therefore we need to specify them here.
@@ -33,15 +35,17 @@ idea = []
 # otherwise not widely supported.
 seed = []
 # Uses clang to compile OpenSSL with sancov support
-sancov = []
+sancov = ["libressl-src/sancov"]
 # Deterministic random
 no-rand = []
 # Enables -fsanitize=address
-asan = []
+asan = ["libressl-src/asan"]
 # Use openssl101f submodule
 openssl101f = []
 # Use openssl102u submodule
 openssl102u = []
+
+libressl = [ "libressl-src" ]
 
 [workspace]
 members = ['testcrate']
@@ -50,3 +54,4 @@ members = ['testcrate']
 cc = "1.0"
 bindgen = "0.59"
 security-claims = { path = "../../tlspuffin-claims" }
+libressl-src = { path = "../rust-libressl-src", optional = true }
