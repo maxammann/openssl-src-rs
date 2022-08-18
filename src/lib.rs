@@ -526,6 +526,9 @@ impl Build {
             #[cfg(not(any(feature = "openssl101f", feature = "openssl102u")))]
             build.arg("build_libs").current_dir(&inner_dir);
 
+            #[cfg(feature = "openssl101f")]
+            build.arg("-j1");
+
             if !cfg!(windows) {
                 if let Some(s) = env::var_os("CARGO_MAKEFLAGS") {
                     build.env("MAKEFLAGS", s);
