@@ -185,10 +185,21 @@ impl Build {
             env::var("OPENSSL_SRC_PERL").unwrap_or(env::var("PERL").unwrap_or("perl".to_string()));
         let mut configure = Command::new(perl_program);
         configure.arg("./Configure");
+
+        // Change the install directory to happen inside of the build directory.
         if host.contains("pc-windows-gnu") {
             configure.arg(&format!("--prefix={}", sanitize_sh(&install_dir)));
         } else {
             configure.arg(&format!("--prefix={}", install_dir.display()));
+        }
+
+        // Specify that openssl directory where things are loaded at runtime is
+        // not inside our build directory. Instead this should be located in the
+        // default locations of the OpenSSL build scripts.
+        if target.contains("windows") {
+            configure.arg("--openssldir=SYS$MANAGER:[OPENSSL]");
+        } else {
+            configure.arg("--openssldir=/usr/local/ssl");
         }
 
         configure
@@ -199,7 +210,12 @@ impl Build {
             .arg("no-unit-test")
             .arg("no-tests"); // speed up compilation
 
-        if cfg!(not(feature = "weak-crypto")) {
+        if cfg!(feature = "weak-crypto") {
+            configure
+                .arg("enable-md2")
+                .arg("enable-rc5")
+                .arg("enable-weak-ssl-ciphers");
+        } else {
             configure
                 .arg("no-md2")
                 .arg("no-rc5")
@@ -224,10 +240,13 @@ impl Build {
         }
 
         if target.contains("musl") || target.contains("windows") {
-            // This actually fails to compile on musl (it needs linux/version.h
+            // Engine module fails to compile on musl (it needs linux/version.h
             // right now) but we don't actually need this most of the time.
             // API of engine.c ld fail in Windows.
-            configure.arg("no-engine");
+            // Disable engine module unless force-engine feature specified
+            if !cfg!(feature = "force-engine") {
+                configure.arg("no-engine");
+            }
         }
 
         if target.contains("musl") {
