@@ -9,14 +9,31 @@ use std::{
     process::Command,
 };
 
-pub fn source_dir() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join(if cfg!(feature = "openssl101f") {
-        "openssl101f"
-    } else if cfg!(feature = "openssl102u") {
-        "openssl102u"
-    } else {
-        "openssl"
-    })
+const REF: &str = if cfg!(feature = "openssl101f") {
+    "OpenSSL_1_0_2f"
+} else if cfg!(feature = "openssl102u") {
+    "OpenSSL_1_0_2u"
+} else if cfg!(feature = "openssl111k") {
+    "fuzz-OpenSSL_1_1_1k"
+} else if cfg!(feature = "openssl111j") {
+    "fuzz-OpenSSL_1_1_1j"
+} else {
+    "master"
+};
+
+fn clone_repo(dest: &str) -> std::io::Result<()> {
+    std::fs::remove_dir_all(dest)?;
+    Command::new("git")
+        .arg("clone")
+        .arg("--depth")
+        .arg("1")
+        .arg("--branch")
+        .arg(REF)
+        .arg("https://github.com/tlspuffin/openssl")
+        .arg(dest)
+        .status()?;
+
+    Ok(())
 }
 
 pub fn version() -> &'static str {
@@ -166,7 +183,9 @@ impl Build {
 
         let inner_dir = build_dir.join("src");
         fs::create_dir_all(&inner_dir).unwrap();
-        cp_r(&source_dir(), &inner_dir);
+
+        clone_repo(&inner_dir.to_str().unwrap()).unwrap();
+
         apply_patches(target, &inner_dir);
 
         let perl_program =
