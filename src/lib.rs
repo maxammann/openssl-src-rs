@@ -10,7 +10,7 @@ use std::{
 };
 
 const REF: &str = if cfg!(feature = "openssl101f") {
-    "OpenSSL_1_0_2f"
+    "OpenSSL_1_0_1f"
 } else if cfg!(feature = "openssl102u") {
     "OpenSSL_1_0_2u"
 } else if cfg!(feature = "openssl111k") {
