@@ -21,6 +21,14 @@ const REF: &str = if cfg!(feature = "openssl101f") {
     "master"
 };
 
+#[cfg(not(any(
+    feature = "openssl101f",
+    feature = "openssl102u",
+    feature = "openssl111k",
+    feature = "openssl111j"
+)))]
+compile_error!("You need to choose an OpenSSL version!");
+
 fn clone_repo(dest: &str) -> std::io::Result<()> {
     std::fs::remove_dir_all(dest)?;
     Command::new("git")
