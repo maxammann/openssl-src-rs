@@ -521,7 +521,8 @@ impl Build {
 
             //configure.arg("enable-asan"); // If compiled with clang this implies "-static-libasan"
             cc.push_str(" -fsanitize=address -shared-libsan");
-            println!("cargo:rustc-link-lib=asan");
+            println!("cargo:rustc-link-arg=-fsanitize=address"); // TODO are these used during the final link step?
+            println!("cargo:rustc-link-arg=-shared-libasan"); // TODO are these used during the final link step?
         }
 
         configure.env("CC", cc);
