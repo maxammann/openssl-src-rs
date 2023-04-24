@@ -520,8 +520,8 @@ impl Build {
             configure.arg("-DOPENSSL_NO_BUF_FREELISTS");
 
             //configure.arg("enable-asan"); // If compiled with clang this implies "-static-libasan"
+            // Important: Make sure to pass these flags to the linker invoked by rustc!
             cc.push_str(" -fsanitize=address -shared-libsan");
-            println!("cargo:rustc-link-lib=asan");
         }
 
         configure.env("CC", cc);
