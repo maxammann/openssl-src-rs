@@ -503,7 +503,11 @@ impl Build {
         let mut cc = "clang".to_owned();
 
         if cfg!(feature = "sancov") {
-            cc.push_str(" -fsanitize-coverage=trace-pc-guard");
+            cc.push_str(" -fsanitize-coverage=trace-pc-guard ");
+        }
+
+        if cfg!(feature = "gcov_analysis") {
+            cc.push_str(" -ftest-coverage -fprofile-arcs ");
         }
 
         // Make additional headers available

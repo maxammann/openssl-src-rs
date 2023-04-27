@@ -44,6 +44,8 @@ sancov = ["libressl-src?/sancov"]
 no-rand = []
 # Enables -fsanitize=address
 asan = ["libressl-src?/asan"]
+# Export coverage during runtime
+gcov_analysis = ["libressl-src?/gcov_analysis"]
 # Use openssl101f submodule
 openssl101f = []
 # Use openssl102u submodule
