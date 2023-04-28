@@ -510,6 +510,10 @@ impl Build {
             cc.push_str(" -ftest-coverage -fprofile-arcs ");
         }
 
+        if cfg!(feature = "llvm_cov_analysis") {
+            cc.push_str(" -fprofile-instr-generate -fcoverage-mapping ");
+        }
+
         // Make additional headers available
         cc.push_str(
             format!(
@@ -552,10 +556,10 @@ impl Build {
             self.run_command(depend, "building OpenSSL dependencies");
 
             let mut build = self.cmd_make();
-            #[cfg(any(feature = "openssl101f", feature = "openssl102u"))]
+
+            build.arg("build_libs");
+
             build.current_dir(&inner_dir);
-            #[cfg(not(any(feature = "openssl101f", feature = "openssl102u")))]
-            build.arg("build_libs").current_dir(&inner_dir);
 
             #[cfg(feature = "openssl101f")]
             build.arg("-j1");
@@ -592,8 +596,6 @@ impl Build {
         if cfg!(feature = "no-rand") {
             Self::build_deterministic_rand(&install_dir);
         }
-
-        fs::remove_dir_all(&inner_dir).unwrap();
 
         Artifacts {
             lib_dir: install_dir.join("lib"),
