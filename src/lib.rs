@@ -163,8 +163,8 @@ impl Build {
         // TODO .arg("no-zlib")
         // TODO .arg("no-zlib-dynamic")
 
-// TODO
-        configure.arg("--with-rand-seed=none");
+// TODO: does only work when combinded with rand.patch?
+        //configure.arg("--with-rand-seed=none");
 
         if cfg!(feature = "weak-crypto") {
             // TODO configure.arg("enable-md2").arg("enable-rc5").arg("enable-weak-ssl-ciphers");
