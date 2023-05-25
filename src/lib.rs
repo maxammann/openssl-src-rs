@@ -16,7 +16,7 @@ const REF: &str = if cfg!(feature = "openssl101f") {
 } else if cfg!(feature = "openssl111k") {
     "fuzz-OpenSSL_1_1_1k"
 } else if cfg!(feature = "openssl111j") {
-    "OpenSSL_1_1_1j"
+    "fuzz-OpenSSL_1_1_1j"
 } else {
     "master"
 };
@@ -37,7 +37,7 @@ fn clone_repo(dest: &str) -> std::io::Result<()> {
         .arg("1")
         .arg("--branch")
         .arg(REF)
-        .arg("https://github.com/openssl/openssl")
+        .arg("https://github.com/tlspuffin/openssl")
         .arg(dest)
         .status()?;
 
@@ -163,7 +163,7 @@ impl Build {
         // TODO .arg("no-zlib")
         // TODO .arg("no-zlib-dynamic")
 
-// TODO: does only work when combinded with rand.patch?
+        // TODO: does only work when combinded with rand.patch?
         //configure.arg("--with-rand-seed=none");
 
         if cfg!(feature = "weak-crypto") {
